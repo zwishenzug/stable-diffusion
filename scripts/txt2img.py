@@ -1,6 +1,8 @@
 import argparse, os, sys, glob
 import cv2
 import torch
+from transformers import logging
+logging.set_verbosity_error()
 import numpy as np
 from omegaconf import OmegaConf
 from PIL import Image
