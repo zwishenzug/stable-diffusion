@@ -69,6 +69,14 @@ def main():
     )
 
     parser.add_argument(
+        "--neg_prompt",
+        type=str,
+        nargs="?",
+        default="",
+        help="the negative prompt"
+    )
+
+    parser.add_argument(
         "--init-img",
         type=str,
         nargs="?",
@@ -250,7 +258,7 @@ def main():
                     for prompts in tqdm(data, desc="data"):
                         uc = None
                         if opt.scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
+                            uc = model.get_learned_conditioning(batch_size * [opt.neg_prompt])
                         if isinstance(prompts, tuple):
                             prompts = list(prompts)
                         c = model.get_learned_conditioning(prompts)
