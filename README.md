@@ -1,6 +1,26 @@
 # Fork Info
 This is a fork which aims to remain fairly close to the standard repo.
 
+## New command line options
+
+### Negative prompt
+```
+--neg_prompt
+```
+Used to supply a negative prompt
+```
+python scripts/txt2img.py --neg_prompt "watermark, logo"
+```
+
+### Half precision (fp16)
+```
+--half
+```
+Makes the software use half precision where possible, reducing the amount of vram needed.
+```
+python scripts/txt2img.py --half
+```
+
 # Stable Diffusion
 *Stable Diffusion was made possible thanks to a collaboration with [Stability AI](https://stability.ai/) and [Runway](https://runwayml.com/) and builds upon our previous work:*
 
