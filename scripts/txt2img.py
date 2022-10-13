@@ -204,6 +204,11 @@ def main():
         choices=["full", "autocast"],
         default="autocast"
     )
+    parser.add_argument(
+        "--half",
+        action='store_true',
+        help="use half precision (fp16)",
+    )
     opt = parser.parse_args()
 
     if opt.laion400m:
@@ -214,11 +219,18 @@ def main():
 
     seed_everything(opt.seed)
 
+    if opt.half:
+        print("Using half precision (fp16) where possible")
+        torch.set_default_tensor_type(torch.HalfTensor)
+
     config = OmegaConf.load(f"{opt.config}")
     model = load_model_from_config(config, f"{opt.ckpt}")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
+
+    if opt.half:
+        model = model.half()
 
     if opt.plms:
         sampler = PLMSSampler(model)

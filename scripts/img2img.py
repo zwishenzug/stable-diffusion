@@ -200,15 +200,27 @@ def main():
         choices=["full", "autocast"],
         default="autocast"
     )
-
+    parser.add_argument(
+        "--half",
+        action='store_true',
+        help="use half precision (fp16)",
+    )
+    
     opt = parser.parse_args()
     seed_everything(opt.seed)
+
+    if opt.half:
+        print("Using half precision (fp16) where possible")
+        torch.set_default_tensor_type(torch.HalfTensor)
 
     config = OmegaConf.load(f"{opt.config}")
     model = load_model_from_config(config, f"{opt.ckpt}")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
+
+    if opt.half:
+        model = model.half()
 
     if opt.plms:
         raise NotImplementedError("PLMS sampler not (yet) supported")
@@ -239,6 +251,8 @@ def main():
 
     assert os.path.isfile(opt.init_img)
     init_image = load_img(opt.init_img).to(device)
+    if opt.half:
+        init_image = init_image.half()
     init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
     init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
 
