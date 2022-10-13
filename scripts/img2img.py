@@ -21,6 +21,7 @@ from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 
+from sd_utils import check_prompts
 
 def chunk(it, size):
     it = iter(it)
@@ -274,9 +275,11 @@ def main():
                     for prompts in tqdm(data, desc="data"):
                         uc = None
                         if opt.scale != 1.0:
+                            check_prompts(model, [opt.neg_prompt])
                             uc = model.get_learned_conditioning(batch_size * [opt.neg_prompt])
                         if isinstance(prompts, tuple):
                             prompts = list(prompts)
+                        check_prompts(model, [prompts[0]]) # The prompts are duplicated by batch_size so only need to check one
                         c = model.get_learned_conditioning(prompts)
 
                         # encode (scaled latent)

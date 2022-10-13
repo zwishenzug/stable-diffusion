@@ -21,6 +21,8 @@ from ldm.models.diffusion.plms import PLMSSampler
 
 from transformers import AutoFeatureExtractor
 
+from sd_utils import check_prompts
+
 def chunk(it, size):
     it = iter(it)
     return iter(lambda: tuple(islice(it, size)), ())
@@ -274,9 +276,11 @@ def main():
                     for prompts in tqdm(data, desc="data"):
                         uc = None
                         if opt.scale != 1.0:
+                            check_prompts(model, [opt.neg_prompt])
                             uc = model.get_learned_conditioning(batch_size * [opt.neg_prompt])
                         if isinstance(prompts, tuple):
                             prompts = list(prompts)
+                        check_prompts(model, [prompts[0]]) # The prompts are duplicated by batch_size so only need to check one
                         c = model.get_learned_conditioning(prompts)
                         shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
                         samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
