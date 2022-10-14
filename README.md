@@ -21,6 +21,21 @@ Makes the software use half precision where possible, reducing the amount of vra
 python scripts/txt2img.py --half
 ```
 
+### Benchmark on first iteration
+```
+--benchmark
+```
+Instructs pytorch to do some benchmarking during the first iteration to try and find the fastest calculation methods.  The first iteration will be slower but generally the next iterations will be faster, so it's useful for longer runs.  It's also reported that this can resolve the issue on 16xx cards where images come out green or black.
+```
+python scripts/txt2img.py --benchmark
+```
+
+## Other changes
+
+### Suppress the very long winded transformers library warning about model mismatch, it's not relevant for stable diffusion
+
+### Check the length of the prompt and negative prompt and warn if it's too long and will be truncated
+
 # Stable Diffusion
 *Stable Diffusion was made possible thanks to a collaboration with [Stability AI](https://stability.ai/) and [Runway](https://runwayml.com/) and builds upon our previous work:*
 

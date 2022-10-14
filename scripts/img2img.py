@@ -208,9 +208,18 @@ def main():
         action='store_true',
         help="use half precision (fp16)",
     )
+    parser.add_argument(
+        "--benchmark",
+        action='store_true',
+        help="benchmark operations and attempt to optimize on first run",
+    )
     
     opt = parser.parse_args()
     seed_everything(opt.seed)
+
+    if opt.benchmark:
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.enabled = True
 
     if opt.half:
         print("Using half precision (fp16) where possible")

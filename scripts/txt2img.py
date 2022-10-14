@@ -213,7 +213,16 @@ def main():
         action='store_true',
         help="use half precision (fp16)",
     )
+    parser.add_argument(
+        "--benchmark",
+        action='store_true',
+        help="benchmark operations and attempt to optimize on first run",
+    )
     opt = parser.parse_args()
+
+    if opt.benchmark:
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.enabled = True
 
     if opt.laion400m:
         print("Falling back to LAION 400M model...")
