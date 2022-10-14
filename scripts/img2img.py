@@ -23,11 +23,6 @@ from ldm.models.diffusion.plms import PLMSSampler
 
 from sd_utils import check_prompts, read_prompts_from_file, PromptInfo, clean_prompt
 
-def chunk(it, size):
-    it = iter(it)
-    return iter(lambda: tuple(islice(it, size)), ())
-
-
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")
     pl_sd = torch.load(ckpt, map_location="cpu")
