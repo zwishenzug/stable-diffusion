@@ -21,7 +21,7 @@ from ldm.models.diffusion.plms import PLMSSampler
 
 from transformers import AutoFeatureExtractor
 
-from sd_utils import check_prompts
+from sd_utils import check_prompts, read_prompts_from_file, PromptInfo, clean_prompt
 
 def chunk(it, size):
     it = iter(it)
@@ -264,15 +264,11 @@ def main():
     batch_size = opt.n_samples
     n_rows = opt.n_rows if opt.n_rows > 0 else batch_size
     if not opt.from_file:
-        prompt = opt.prompt
-        assert prompt is not None
-        data = [batch_size * [prompt]]
-
+        assert opt.prompt is not None
+        prompts_data = [PromptInfo(prompt=clean_prompt(opt.prompt), neg_prompt=clean_prompt(opt.neg_prompt))]
     else:
         print(f"reading prompts from {opt.from_file}")
-        with open(opt.from_file, "r") as f:
-            data = f.read().splitlines()
-            data = list(chunk(data, batch_size))
+        prompts_data = read_prompts_from_file(opt.from_file)
 
     sample_path = os.path.join(outpath, "samples")
     os.makedirs(sample_path, exist_ok=True)
@@ -290,15 +286,21 @@ def main():
                 tic = time.time()
                 all_samples = list()
                 for n in trange(opt.n_iter, desc="Sampling"):
-                    for prompts in tqdm(data, desc="data"):
+                    seed = opt.seed + n
+                    for pi in tqdm(prompts_data, desc="data"):
+                        seed_everything(seed)
+                    
                         uc = None
                         if opt.scale != 1.0:
-                            check_prompts(model, [opt.neg_prompt])
-                            uc = model.get_learned_conditioning(batch_size * [opt.neg_prompt])
-                        if isinstance(prompts, tuple):
-                            prompts = list(prompts)
-                        check_prompts(model, [prompts[0]]) # The prompts are duplicated by batch_size so only need to check one
-                        c = model.get_learned_conditioning(prompts)
+                            check_prompts(model, [pi.neg_prompt])
+                            uc = model.get_learned_conditioning(batch_size * [pi.neg_prompt])
+                            
+                        check_prompts(model, [pi.prompt])
+                        c = model.get_learned_conditioning(batch_size * [pi.prompt])
+                        
+                        print(f"prompt    : '{pi.prompt}'")
+                        print(f"neg prompt: '{pi.neg_prompt}'")
+                        
                         shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
                         samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
                                                          conditioning=c,
@@ -314,10 +316,10 @@ def main():
                         x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
 
                         if not opt.skip_save:
-                            for x_sample in x_samples_ddim:
+                            for i, x_sample in enumerate(x_samples_ddim):
                                 x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                 img = Image.fromarray(x_sample.astype(np.uint8))
-                                img.save(os.path.join(sample_path, f"{base_count:05}.{output_format}"))
+                                img.save(os.path.join(sample_path, f"{base_count:05}_{seed}_{i}.{output_format}"))
                                 base_count += 1
 
                         if not opt.skip_grid:

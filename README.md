@@ -47,6 +47,21 @@ python scripts/txt2img.py --jpeg
 
 * Apply the DoggettX optimizations to allow making larger images on cards with lower vram
 
+* The seed and sample index get added into the filename
+
+* The seed gets restored for each prompt in a batch file, and incremented on every iteration
+
+### --from-file changes
+
+* Empty lines are now ignored
+
+* Lines starting with # are considered comments and ignored
+
+* Negative prompts can be given in the batch file, separate the main prompt and the negative prompt with ###
+```
+A picture of a cat###flowers, logo, watermark
+```
+
 # Stable Diffusion
 *Stable Diffusion was made possible thanks to a collaboration with [Stability AI](https://stability.ai/) and [Runway](https://runwayml.com/) and builds upon our previous work:*
 
