@@ -238,12 +238,11 @@ def main():
 
     config = OmegaConf.load(f"{opt.config}")
     model = load_model_from_config(config, f"{opt.ckpt}")
+    if opt.half:
+        model = model.half()
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
-
-    if opt.half:
-        model = model.half()
 
     if opt.plms:
         sampler = PLMSSampler(model)
