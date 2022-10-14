@@ -19,7 +19,7 @@ from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 
-from sd_utils import check_prompts, read_prompts_from_file, PromptInfo, clean_prompt
+from sd_utils import read_prompts_from_file, PromptInfo, build_cond
 
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")
@@ -241,6 +241,10 @@ def main():
         print(f"reading prompts from {opt.from_file}")
         prompts_data = read_prompts_from_file(opt.from_file)
 
+    # figure out the buffs/nerfs and remake the prompt
+    for pi in prompts_data:
+        pi.parse()
+
     sample_path = os.path.join(outpath, "samples")
     os.makedirs(sample_path, exist_ok=True)
     base_count = len(os.listdir(sample_path))
@@ -261,17 +265,15 @@ def main():
                     for pi in tqdm(prompts_data, desc="data"):
                         seed_everything(seed)
                     
-                        uc = None
-                        if opt.scale != 1.0:
-                            check_prompts(model, [pi.neg_prompt])
-                            uc = model.get_learned_conditioning(batch_size * [pi.neg_prompt])
-                            
-                        check_prompts(model, [pi.prompt])
-                        c = model.get_learned_conditioning(batch_size * [pi.prompt])
-                        
                         print(f"prompt    : '{pi.prompt}'")
                         print(f"neg prompt: '{pi.neg_prompt}'")
-                        
+                    
+                        uc = None
+                        if opt.scale != 1.0:
+                            uc = build_cond(model, device, batch_size, pi.neg_prompt, pi.neg_buffs, pi.neg_nerfs)
+
+                        c = build_cond(model, device, batch_size, pi.prompt, pi.buffs, pi.nerfs)
+
                         shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
                         samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
                                                          conditioning=c,

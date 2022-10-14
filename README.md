@@ -51,6 +51,11 @@ python scripts/txt2img.py --jpeg
 
 * The seed gets restored for each prompt in a batch file, and incremented on every iteration
 
+* Emphasis can be given to parts of the prompt/negative prompt by using \(\) for more emphasis or \[\] for less emphasis, more brackets around the text increases the strength
+```
+A picture of a ((black)) cat
+```
+
 ### --from-file changes
 
 * Empty lines are now ignored
