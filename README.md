@@ -32,9 +32,11 @@ python scripts/txt2img.py --benchmark
 
 ## Other changes
 
-### Suppress the very long winded transformers library warning about model mismatch, it's not relevant for stable diffusion
+* Suppress the very long winded transformers library warning about model mismatch, it's not relevant for stable diffusion.
 
-### Check the length of the prompt and negative prompt and warn if it's too long and will be truncated
+* Check the length of the prompt and negative prompt and warn if it's too long and will be truncated.
+
+* Apply the DoggettX optimizations to allow making larger images on cards with lower vram
 
 # Stable Diffusion
 *Stable Diffusion was made possible thanks to a collaboration with [Stability AI](https://stability.ai/) and [Runway](https://runwayml.com/) and builds upon our previous work:*
