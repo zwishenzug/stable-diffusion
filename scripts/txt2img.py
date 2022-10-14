@@ -218,7 +218,16 @@ def main():
         action='store_true',
         help="benchmark operations and attempt to optimize on first run",
     )
+    parser.add_argument(
+        "--jpeg",
+        action='store_true',
+        help="output as jpeg instead of png",
+    )
     opt = parser.parse_args()
+
+    output_format = "png"
+    if opt.jpeg:
+        output_format = "jpeg"
 
     if opt.benchmark:
         torch.backends.cudnn.benchmark = True
@@ -303,15 +312,12 @@ def main():
 
                         x_samples_ddim = model.decode_first_stage(samples_ddim)
                         x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
-                        x_samples_ddim = x_samples_ddim.cpu().permute(0, 2, 3, 1).numpy()
-
-                        x_samples_ddim = torch.from_numpy(x_samples_ddim).permute(0, 3, 1, 2)
 
                         if not opt.skip_save:
                             for x_sample in x_samples_ddim:
                                 x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                 img = Image.fromarray(x_sample.astype(np.uint8))
-                                img.save(os.path.join(sample_path, f"{base_count:05}.png"))
+                                img.save(os.path.join(sample_path, f"{base_count:05}.{output_format}"))
                                 base_count += 1
 
                         if not opt.skip_grid:
@@ -326,7 +332,7 @@ def main():
                     # to image
                     grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
                     img = Image.fromarray(grid.astype(np.uint8))
-                    img.save(os.path.join(outpath, f'grid-{grid_count:04}.png'))
+                    img.save(os.path.join(outpath, f'grid-{grid_count:04}.{output_format}'))
                     grid_count += 1
 
                 toc = time.time()

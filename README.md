@@ -30,6 +30,15 @@ Instructs pytorch to do some benchmarking during the first iteration to try and 
 python scripts/txt2img.py --benchmark
 ```
 
+### Output as jpeg instead of png
+```
+--jpeg
+```
+Output files will be in jpeg format instead of the default png
+```
+python scripts/txt2img.py --jpeg
+```
+
 ## Other changes
 
 * Suppress the very long winded transformers library warning about model mismatch, it's not relevant for stable diffusion.

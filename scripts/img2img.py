@@ -213,9 +213,18 @@ def main():
         action='store_true',
         help="benchmark operations and attempt to optimize on first run",
     )
+    parser.add_argument(
+        "--jpeg",
+        action='store_true',
+        help="output as jpeg instead of png",
+    )
     
     opt = parser.parse_args()
     seed_everything(opt.seed)
+
+    output_format = "png"
+    if opt.jpeg:
+        output_format = "jpeg"
 
     if opt.benchmark:
         torch.backends.cudnn.benchmark = True
@@ -303,7 +312,7 @@ def main():
                             for x_sample in x_samples:
                                 x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                 Image.fromarray(x_sample.astype(np.uint8)).save(
-                                    os.path.join(sample_path, f"{base_count:05}.png"))
+                                    os.path.join(sample_path, f"{base_count:05}.{output_format}"))
                                 base_count += 1
                         all_samples.append(x_samples)
 
@@ -315,7 +324,7 @@ def main():
 
                     # to image
                     grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
-                    Image.fromarray(grid.astype(np.uint8)).save(os.path.join(outpath, f'grid-{grid_count:04}.png'))
+                    Image.fromarray(grid.astype(np.uint8)).save(os.path.join(outpath, f'grid-{grid_count:04}.{output_format}'))
                     grid_count += 1
 
                 toc = time.time()
