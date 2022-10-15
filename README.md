@@ -25,7 +25,7 @@ python scripts/txt2img.py --half
 ```
 --benchmark
 ```
-Instructs pytorch to do some benchmarking during the first iteration to try and find the fastest calculation methods.  The first iteration will be slower but generally the next iterations will be faster, so it's useful for longer runs.  It's also reported that this can resolve the issue on 16xx cards where images come out green or black.
+Instructs pytorch to do some benchmarking during the first iteration to try and find the fastest calculation methods.  The first iteration will be slower but generally the next iterations will be faster, so it's useful for longer runs.  It's also reported that this can resolve the issue on 16xx cards where images come out green or black.  NOTE: This mode can use more vram.
 ```
 python scripts/txt2img.py --benchmark
 ```
@@ -37,6 +37,16 @@ python scripts/txt2img.py --benchmark
 Output files will be in jpeg format instead of the default png
 ```
 python scripts/txt2img.py --jpeg
+```
+
+### High resolution fix
+```
+--hrfix
+--hrstrength \<value\>
+```
+When generating at higher resolutions, by default Stable Diffusion will often duplicate items in the image.  This option can help to mitigate that by first generating a smaller image using txt2img, then upscaling it using img2img.  The --hrstrength option is the same thing as --strength in img2img, it guides how much the final image adheres to the smaller image.
+```
+python scripts/txt2img.py --hrfix --hrstrength 0.60
 ```
 
 ## Other changes

@@ -20,6 +20,7 @@ from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 
 from sd_utils import read_prompts_from_file, PromptInfo, build_cond
+from sd_utils import hrfix_process
 
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")
@@ -194,6 +195,17 @@ def main():
         action='store_true',
         help="output as jpeg instead of png",
     )
+    parser.add_argument(
+        "--hrfix",
+        action='store_true',
+        help="hires fix, generates a smaller version of the image first then upscales using img2img",
+    )
+    parser.add_argument(
+        "--hrstrength",
+        type=float,
+        default=0.60,
+        help="strength for noising/unnoising during hires fix. 1.0 corresponds to full destruction of information in init image",
+    )
     opt = parser.parse_args()
 
     output_format = "png"
@@ -224,6 +236,10 @@ def main():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
 
+    if opt.plms and opt.hrfix:
+        print("WARNING: plms sampling and hrfix are incompatible.  Using ddim sampling instead")
+        opt.plms = False
+        
     if opt.plms:
         sampler = PLMSSampler(model)
     else:
@@ -274,19 +290,31 @@ def main():
 
                         c = build_cond(model, device, batch_size, pi.prompt, pi.buffs, pi.nerfs)
 
-                        shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
-                        samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
-                                                         conditioning=c,
-                                                         batch_size=opt.n_samples,
-                                                         shape=shape,
-                                                         verbose=False,
-                                                         unconditional_guidance_scale=opt.scale,
-                                                         unconditional_conditioning=uc,
-                                                         eta=opt.ddim_eta,
-                                                         x_T=start_code)
+                        if opt.hrfix:
+                            x_samples_ddim = hrfix_process(model,
+                                                           device,
+                                                           opt.W,
+                                                           opt.H,
+                                                           c,
+                                                           uc,
+                                                           batch_size,
+                                                           opt,
+                                                           seed,
+                                                           sampler)
+                        else:
+                            shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
+                            samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
+                                                             conditioning=c,
+                                                             batch_size=opt.n_samples,
+                                                             shape=shape,
+                                                             verbose=False,
+                                                             unconditional_guidance_scale=opt.scale,
+                                                             unconditional_conditioning=uc,
+                                                             eta=opt.ddim_eta,
+                                                             x_T=start_code)
 
-                        x_samples_ddim = model.decode_first_stage(samples_ddim)
-                        x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
+                            x_samples_ddim = model.decode_first_stage(samples_ddim)
+                            x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
 
                         if not opt.skip_save:
                             for i, x_sample in enumerate(x_samples_ddim):
