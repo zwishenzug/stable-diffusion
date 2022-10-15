@@ -66,9 +66,9 @@ def main():
         default="outputs/txt2img-samples"
     )
     parser.add_argument(
-        "--skip_grid",
+        "--save_grid",
         action='store_true',
-        help="do not save a grid, only individual samples. Helpful when evaluating lots of samples",
+        help="save a grid of the generated images at the end of the process",
     )
     parser.add_argument(
         "--skip_save",
@@ -323,10 +323,10 @@ def main():
                                 img.save(os.path.join(sample_path, f"{base_count:05}_{seed}_{i}.{output_format}"))
                                 base_count += 1
 
-                        if not opt.skip_grid:
+                        if opt.save_grid:
                             all_samples.append(x_samples_ddim)
 
-                if not opt.skip_grid:
+                if opt.save_grid:
                     # additionally, save as grid
                     grid = torch.stack(all_samples, 0)
                     grid = rearrange(grid, 'n b c h w -> (n b) c h w')

@@ -34,12 +34,12 @@ python scripts/txt2img.py --benchmark
 ```
 --jpeg
 ```
-Output files will be in jpeg format instead of the default png
+Output files will be in jpeg format instead of the default png.
 ```
 python scripts/txt2img.py --jpeg
 ```
 
-### High resolution fix
+### High resolution fix (txt2img)
 ```
 --hrfix
 --hrstrength \<value\>
@@ -49,19 +49,28 @@ When generating at higher resolutions, by default Stable Diffusion will often du
 python scripts/txt2img.py --hrfix --hrstrength 0.60
 ```
 
+### Save grid
+```
+--save_grid
+```
+The original behaviour was to always save a grid, and there was an option --skip_grid to turn it off.  In this fork the behaviour is reversed, no grid is saved by default and this option turns it back on.
+```
+python scripts/txt2img.py --save_grid
+```
+
 ## Other changes
 
 * Suppress the very long winded transformers library warning about model mismatch, it's not relevant for stable diffusion.
 
 * Check the length of the prompt and negative prompt and warn if it's too long and will be truncated.
 
-* Apply the DoggettX optimizations to allow making larger images on cards with lower vram
+* Apply the DoggettX optimizations to allow making larger images on cards with lower vram.
 
-* The seed and sample index get added into the filename
+* The seed and sample index get added into the filename.
 
-* The seed gets restored for each prompt in a batch file, and incremented on every iteration
+* The seed gets restored for each prompt in a batch file, and incremented on every iteration.
 
-* Emphasis can be given to parts of the prompt/negative prompt by using \(\) for more emphasis or \[\] for less emphasis, more brackets around the text increases the strength
+* Emphasis can be given to parts of the prompt/negative prompt by using \(\) for more emphasis or \[\] for less emphasis, more brackets around the text increases the strength.
 ```
 A picture of a ((black)) cat
 ```
