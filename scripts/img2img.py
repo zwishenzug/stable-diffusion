@@ -21,7 +21,7 @@ from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 
-from sd_utils import read_prompts_from_file, PromptInfo, build_cond
+from sd_utils import read_prompts_from_file, PromptInfo, build_cond, clean_prompt
 
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")

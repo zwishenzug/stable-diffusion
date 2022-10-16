@@ -42,7 +42,7 @@ python scripts/txt2img.py --jpeg
 ### High resolution fix (txt2img)
 ```
 --hrfix
---hrstrength \<value\>
+--hrstrength <value>
 ```
 When generating at higher resolutions, by default Stable Diffusion will often duplicate items in the image.  This option can help to mitigate that by first generating a smaller image using txt2img, then upscaling it using img2img.  The --hrstrength option is the same thing as --strength in img2img, it guides how much the final image adheres to the smaller image.
 ```
