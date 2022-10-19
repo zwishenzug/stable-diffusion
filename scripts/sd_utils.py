@@ -68,6 +68,7 @@ def make_tokens(model, text, finalize = False):
     return ids
 
 def check_prompt(model, p):
+    tokenizer = model.cond_stage_model.tokenizer
     max_length = 75 # The token buffer length is 77 but there's always a special start/end token which means only 75 are usable
     ids = make_tokens(model, p)
     if len(ids) > max_length:
