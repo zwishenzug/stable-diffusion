@@ -58,6 +58,17 @@ The original behaviour was to always save a grid, and there was an option --skip
 python scripts/txt2img.py --save_grid
 ```
 
+### Interactive mode
+```
+--interactive
+```
+When using this mode, --prompt and --from_file are ignored and you are put into an input() loop where you can input your prompts.
+```
+python scripts/txt2img.py --interactive
+```
+Other commands may also be typed at the prompt, currently only --seed <num> is supported, to allow you to change the random seed
+
+
 ## Other changes
 
 * Suppress the very long winded transformers library warning about model mismatch, it's not relevant for stable diffusion.

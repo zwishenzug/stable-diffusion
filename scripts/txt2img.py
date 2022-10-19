@@ -206,6 +206,11 @@ def main():
         default=0.60,
         help="strength for noising/unnoising during hires fix. 1.0 corresponds to full destruction of information in init image",
     )
+    parser.add_argument(
+        "--interactive",
+        action='store_true',
+        help="instead of using the --prompt param, will sit in an input() loop taking prompts that way",
+    )
     opt = parser.parse_args()
 
     output_format = "png"
@@ -270,75 +275,99 @@ def main():
     if opt.fixed_code:
         start_code = torch.randn([opt.n_samples, opt.C, opt.H // opt.f, opt.W // opt.f], device=device)
 
-    precision_scope = autocast if opt.precision=="autocast" else nullcontext
-    with torch.no_grad():
-        with precision_scope("cuda"):
-            with model.ema_scope():
-                tic = time.time()
-                all_samples = list()
-                for n in trange(opt.n_iter, desc="Sampling"):
-                    seed = opt.seed + n
-                    for pi in tqdm(prompts_data, desc="data"):
-                        seed_everything(seed)
-                    
-                        print(f"prompt    : '{pi.prompt}'")
-                        print(f"neg prompt: '{pi.neg_prompt}'")
-                    
-                        uc = None
-                        if opt.scale != 1.0:
-                            uc = build_cond(model, device, batch_size, pi.neg_prompt, pi.neg_buffs, pi.neg_nerfs)
+    running = True
 
-                        c = build_cond(model, device, batch_size, pi.prompt, pi.buffs, pi.nerfs)
+    while running:
+        if opt.interactive:
+            opt.n_iter = 1
+            prompt_text = input('>')
+            if prompt_text.lower().startswith('--seed'):
+                try:
+                    seed_val = int(prompt_text[6:])
+                except:
+                    print("Invalid seed value")
+                    continue
+                opt.seed = seed_val
+                continue
+            pi = PromptInfo(prompt = clean_prompt(prompt_text))
+            neg_pos = prompt_text.find('###')
+            if neg_pos >= 0:
+                pi.prompt = clean_prompt(prompt_text[0:neg_pos])
+                pi.neg_prompt = clean_prompt(prompt_text[neg_pos+3:])
+            pi.parse()
+            prompts_data = [pi]
 
-                        if opt.hrfix:
-                            x_samples_ddim = hrfix_process(model,
-                                                           device,
-                                                           opt.W,
-                                                           opt.H,
-                                                           c,
-                                                           uc,
-                                                           batch_size,
-                                                           opt,
-                                                           seed,
-                                                           sampler)
-                        else:
-                            shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
-                            samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
-                                                             conditioning=c,
-                                                             batch_size=opt.n_samples,
-                                                             shape=shape,
-                                                             verbose=False,
-                                                             unconditional_guidance_scale=opt.scale,
-                                                             unconditional_conditioning=uc,
-                                                             eta=opt.ddim_eta,
-                                                             x_T=start_code)
+        precision_scope = autocast if opt.precision=="autocast" else nullcontext
+        with torch.no_grad():
+            with precision_scope("cuda"):
+                with model.ema_scope():
+                    tic = time.time()
+                    all_samples = list()
+                    for n in trange(opt.n_iter, desc="Sampling"):
+                        seed = opt.seed + n
+                        for pi in tqdm(prompts_data, desc="data"):
+                            seed_everything(seed)
+                        
+                            print(f"prompt    : '{pi.prompt}'")
+                            print(f"neg prompt: '{pi.neg_prompt}'")
+                        
+                            uc = None
+                            if opt.scale != 1.0:
+                                uc = build_cond(model, device, batch_size, pi.neg_prompt, pi.neg_buffs, pi.neg_nerfs)
 
-                            x_samples_ddim = model.decode_first_stage(samples_ddim)
-                            x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
+                            c = build_cond(model, device, batch_size, pi.prompt, pi.buffs, pi.nerfs)
 
-                        if not opt.skip_save:
-                            for i, x_sample in enumerate(x_samples_ddim):
-                                x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                                img = Image.fromarray(x_sample.astype(np.uint8))
-                                img.save(os.path.join(sample_path, f"{base_count:05}_{seed}_{i}.{output_format}"))
-                                base_count += 1
+                            if opt.hrfix:
+                                x_samples_ddim = hrfix_process(model,
+                                                               device,
+                                                               opt.W,
+                                                               opt.H,
+                                                               c,
+                                                               uc,
+                                                               batch_size,
+                                                               opt,
+                                                               seed,
+                                                               sampler)
+                            else:
+                                shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
+                                samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
+                                                                 conditioning=c,
+                                                                 batch_size=opt.n_samples,
+                                                                 shape=shape,
+                                                                 verbose=False,
+                                                                 unconditional_guidance_scale=opt.scale,
+                                                                 unconditional_conditioning=uc,
+                                                                 eta=opt.ddim_eta,
+                                                                 x_T=start_code)
 
-                        if opt.save_grid:
-                            all_samples.append(x_samples_ddim)
+                                x_samples_ddim = model.decode_first_stage(samples_ddim)
+                                x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
 
-                if opt.save_grid:
-                    # additionally, save as grid
-                    grid = torch.stack(all_samples, 0)
-                    grid = rearrange(grid, 'n b c h w -> (n b) c h w')
-                    grid = make_grid(grid, nrow=n_rows)
+                            if not opt.skip_save:
+                                for i, x_sample in enumerate(x_samples_ddim):
+                                    x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                                    img = Image.fromarray(x_sample.astype(np.uint8))
+                                    img.save(os.path.join(sample_path, f"{base_count:05}_{seed}_{i}.{output_format}"))
+                                    base_count += 1
 
-                    # to image
-                    grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
-                    img = Image.fromarray(grid.astype(np.uint8))
-                    img.save(os.path.join(outpath, f'grid-{grid_count:04}.{output_format}'))
-                    grid_count += 1
+                            if opt.save_grid:
+                                all_samples.append(x_samples_ddim)
 
-                toc = time.time()
+                    if opt.save_grid:
+                        # additionally, save as grid
+                        grid = torch.stack(all_samples, 0)
+                        grid = rearrange(grid, 'n b c h w -> (n b) c h w')
+                        grid = make_grid(grid, nrow=n_rows)
+
+                        # to image
+                        grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
+                        img = Image.fromarray(grid.astype(np.uint8))
+                        img.save(os.path.join(outpath, f'grid-{grid_count:04}.{output_format}'))
+                        grid_count += 1
+
+                    toc = time.time()
+        if not opt.interactive:
+            running = False
 
     print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
           f" \nEnjoy.")
